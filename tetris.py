@@ -150,16 +150,43 @@ def create_grid(locked_positions={}):
 
 
 def convert_shape_format(shape):
-    pass
+    positions = []
+    format_shape = shape.shape[shape.rotation % len(shape.shape)]
+
+    for i, line in enumerate(format_shape):
+        row = list(line)
+        for j, column in enumerate(row):
+            if column == '0':
+                positions.append((shape.x +j, shape.y + i))
+
+
+    # offset
+    for i, pos in enumerate(positions):
+        positions[i] = (pos[0] - 2, pos[1] - 4)
 
 
 # boundary collision for pieces
 def valid_space(shape, grid):
-    pass
+    # checking if area on grid is empty
+    accepted_position = [[(j, i) for j in range(10) if grid[i][j] == (0, 0, 0) for i in range(20)]]
+    # flatten list in to 1D
+    accepted_position = [j for sub in accepted_position for j in sub]
+
+    formatted = convert_shape_format(shape)
+    for pos in formatted:
+        if pos not in accepted_position:
+            # check if shape is in valid position when falling and is not visible on grid
+            if pos[1] > -1:
+                return False
+    return True
 
 
 def check_lost(positions):
-    pass
+    for pos in positions:
+        x, y = pos
+        if y < 1:
+            return True
+    return False
 
 
 def get_shape():
@@ -171,12 +198,15 @@ def draw_text_middle(text, size, color, surface):
 
 
 def draw_grid(surface, grid):
-    for i in range(len(grid)):
-        for j in range(len(grid[i])):
-            pygame.draw.rect(surface, grid[i][j],
-                             (top_left_x + j*block_size, top_left_y+i*block_size, block_size, block_size), 0)
+    # draw grid lines
+    sx = top_left_x
+    sy = top_left_y
 
-    pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 4)
+    for i in range(len(grid)):
+        pygame.draw.line(surface, (128, 128, 128), (sx, sy + (i * block_size)),
+                         (sx + play_width, sy + (i * block_size)))
+        for j in range(len(grid[i])):
+            pygame.draw.line(surface, (128, 128, 128), (sy+(j*block_size), sy), (sx+j*block_size,  sy+play_height))
 
 
 def clear_rows(grid, locked):
@@ -194,13 +224,22 @@ def draw_window(surface, grid):
     label = font.render('Tetris', 1, (255, 255, 255))
 
     surface.blit(label, (((top_left_x + play_width) / 2) - (label.get_width() / 2), 30))
+
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            pygame.draw.rect(surface, grid[i][j],
+                             (top_left_x + j*block_size, top_left_y+i*block_size, block_size, block_size), 0)
+
+    pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 4)
+
     draw_grid(surface, grid)
     pygame.display.update()
 
 
-def main(win):
-
-    locked_positions = {}
+# main game loop
+def main():
+    global grid
+    locked_positions = {} #(x, y): (255, 255, 255)
     grid = create_grid(locked_positions)
     change_piece = False
     run = True
@@ -208,8 +247,24 @@ def main(win):
     next_piece = get_shape()
     clock = pygame.time.Clock()
     fall_time = 0
+    fall_speed = 0.27
 
     while run:
+        # constantly update grid
+        grid = create_grid(locked_positions)
+        # get time since last clock.tick() - length of while loop
+        fall_time += clock.get_rawtime()
+        clock.tick()
+
+        if fall_time / 1000 > fall_speed:
+            fall_time = 0
+            # automatically moves piece down by 1
+            current_piece.y += 1
+            if not (valid_space(current_piece, grid) and current_piece.y > 0):
+                current_piece.y -= 1
+                # hit the bottom or hit another piece
+                change_piece = True
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -231,7 +286,28 @@ def main(win):
                     if not valid_space(current_piece, grid):
                         current_piece.rotation -= 1
 
-        draw_grid(win, grid)
+        shape_positions = convert_shape_format(current_piece)
+
+        for i in range(len(shape_positions)):
+            x, y = shape_positions[i]
+            # if not above the grid, colour the piece
+            if y > -1:
+                grid[y][x] = current_piece.color
+
+        if change_piece:
+            for pos in shape_positions:
+                p = (pos[0], pos[1])
+                locked_positions[p] = current_piece.color
+            current_piece = next_piece
+            next_piece = get_shape()
+            change_piece = False
+
+        draw_window(win, grid)
+
+        if check_lost(locked_positions):
+            run = False
+    # quit game
+    pygame.display.quit()
 
 
 def main_menu(win):
