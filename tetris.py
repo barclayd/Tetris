@@ -209,7 +209,29 @@ def draw_grid(surface, grid):
 
 
 def clear_rows(grid, locked):
-    pass
+
+    inc = 0
+    # loops through grid backwards
+    for i in range(len(grid)-1, -1, -1):
+        row = grid[i]
+        if (0, 0, 0) not in row:
+            # increment the number of rows the grid needs to be shifted down
+            inc += 1
+            ind = 1
+            for j in range(len(row)):
+                try:
+                    del locked[(j, i)]
+                except:
+                    continue
+    # shift every row down
+    if inc > 0:
+        # get all positions with same y value in the correct order
+        for key in sorted(list(locked), key=lambda x: x[1])[::-1]:
+            x, y = key
+            if y < ind:
+                newKey = (x, y + inc)
+                locked[newKey] = locked.pop(key)
+    # add new replacement row on the top
 
 
 def draw_next_shape(shape, surface):
@@ -312,6 +334,7 @@ def main(win):
             current_piece = next_piece
             next_piece = get_shape()
             change_piece = False
+            clear_rows(grid, locked_positions)
 
         draw_window(win, grid)
         draw_next_shape(next_piece, win)
