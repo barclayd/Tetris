@@ -159,23 +159,22 @@ def convert_shape_format(shape):
             if column == '0':
                 positions.append((shape.x +j, shape.y + i))
 
-
     # offset
     for i, pos in enumerate(positions):
         positions[i] = (pos[0] - 2, pos[1] - 4)
 
+    return positions
+
 
 # boundary collision for pieces
 def valid_space(shape, grid):
-    # checking if area on grid is empty
-    accepted_position = [[(j, i) for j in range(10) if grid[i][j] == (0, 0, 0) for i in range(20)]]
-    # flatten list in to 1D
-    accepted_position = [j for sub in accepted_position for j in sub]
+    accepted_pos = [[(j, i) for j in range(10) if grid[i][j] == (0, 0, 0)] for i in range(20)]
+    accepted_pos = [j for sub in accepted_pos for j in sub]
 
     formatted = convert_shape_format(shape)
+
     for pos in formatted:
-        if pos not in accepted_position:
-            # check if shape is in valid position when falling and is not visible on grid
+        if pos not in accepted_pos:
             if pos[1] > -1:
                 return False
     return True
@@ -203,10 +202,10 @@ def draw_grid(surface, grid):
     sy = top_left_y
 
     for i in range(len(grid)):
-        pygame.draw.line(surface, (128, 128, 128), (sx, sy + (i * block_size)),
-                         (sx + play_width, sy + (i * block_size)))
+        pygame.draw.line(surface, (128, 128, 128), (sx, sy + i * block_size), (sx + play_width, sy + i * block_size))
         for j in range(len(grid[i])):
-            pygame.draw.line(surface, (128, 128, 128), (sy+(j*block_size), sy), (sx+j*block_size,  sy+play_height))
+            pygame.draw.line(surface, (128, 128, 128), (sx + j * block_size, sy),
+                             (sx + j * block_size, sy + play_height))
 
 
 def clear_rows(grid, locked):
@@ -237,7 +236,7 @@ def draw_window(surface, grid):
 
 
 # main game loop
-def main():
+def main(win):
     global grid
     locked_positions = {} #(x, y): (255, 255, 255)
     grid = create_grid(locked_positions)
@@ -315,7 +314,7 @@ def main_menu(win):
 
 
 # py_game surface
-win = pygame.display.set_mode(screen_width, screen_height)
+win = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Tetris')
 
 # main menu
