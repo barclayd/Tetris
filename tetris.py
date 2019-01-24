@@ -226,16 +226,16 @@ def clear_rows(grid, locked):
             for j in range(len(row)):
                 try:
                     del locked[(j, i)]
-                except:
-                    continue
+                finally:
+                    pass
     # shift every row down
     if inc > 0:
         # get all positions with same y value in the correct order
         for key in sorted(list(locked), key=lambda x: x[1])[::-1]:
             x, y = key
             if y < ind:
-                newKey = (x, y + inc)
-                locked[newKey] = locked.pop(key) # add new replacement row on the top
+                new_key = (x, y + inc)
+                locked[new_key] = locked.pop(key) # add new replacement row on the top
 
     # value used for scoring
     return inc
@@ -248,9 +248,9 @@ def draw_next_shape(shape, surface):
 
     sx = top_left_x + play_width + 50
     sy = (top_left_y + play_height/2) - 100
-    format = shape.shape[shape.rotation % len(shape.shape)]
+    format_text = shape.shape[shape.rotation % len(shape.shape)]
 
-    for i, line in enumerate(format):
+    for i, line in enumerate(format_text):
         row = list(line)
         for j, column in enumerate(row):
             if column == '0':
@@ -264,8 +264,8 @@ def update_score(current_score):
     found_score = high_score()
 
     with open('scores.txt', 'w') as f:
-        if current_score > int(found_score):
-            f.write(str(found_score))
+        if int(current_score) > int(found_score):
+            f.write(str(current_score))
 
 
 def high_score():
@@ -331,7 +331,7 @@ def main(win):
     fall_speed = 0.27
     level_time = 0
     score = 0
-    last_score = high_score()
+    max_score = high_score()
 
     while run:
         # constantly update grid
@@ -399,11 +399,12 @@ def main(win):
         pygame.display.update()
 
         if check_lost(locked_positions):
-            draw_text_middle(win, 'Press Any Key to Play', 60, (255, 255, 255))
+            draw_text_middle(win, "Game Over!", 80, (255, 255, 255))
             pygame.display.update()
             pygame.time.delay(1500)
             run = False
-            update_score(score)
+            if int(score) > int(max_score):
+                update_score(score)
 
 
 def main_menu(win):
